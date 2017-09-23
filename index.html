@@ -90,14 +90,14 @@
 
                         
                         <li>
-                            <a href="/about/">About</a>
+                            <a href="/archives/">Archives</a>
                         </li>
                         
                     
 
                         
                         <li>
-                            <a href="/archives/">Archives</a>
+                            <a href="/about/">About</a>
                         </li>
                         
                     
@@ -184,27 +184,25 @@
 
 <div class="post-preview">
 
-    <a href="/2014/01/29/hello-2015/">
+    <a href="/2017/09/23/2017-09-23-volatile/">
         <h2 class="post-title">
-            Welcome to Hux Blog
+            volatile的语义
         </h2>
         <h3 class="post-subtitle">
-             "Hello World, Hello Blog"
+            
         </h3>
         <div class="post-content-preview">
             
-“Yeah It’s on. ”
+volatile： 可见性、禁止重排序
 
-前言Hux 的 Blog 就这么开通了。
-跳过废话，直接看技术实现 
-2015 年，Hux 总算有个地方可以好好写点东西了。
-作为一个程序员， Blog 这种轮子要是挂在大众博客程序上就太没意思了。一是觉得大部分 Blog 服务都太丑，二是觉得不能随便定制不好玩。之前因为太懒没有折腾，结果就一直连个写 Blog 的地儿都没有。
-在玩了一段时间知乎之后，答......
+一. 背景1. 内存模型在说volatile语义之前简单说一下内存模型
+
+硬件内存模型：在程序运行过程中，需要有主内存，寄存器以及CPU来共同完成计算，为了解决多核心CPU和的读写速度与普通主内存的速度上的“量级”差距，中间加入了寄存器这样的告诉缓存。为了解决多核心CPU对应多个高速缓存和一个主内存之间的数据不一致问题，引入了缓存一致性协议，比如M......
         </div>
     </a>
     <p class="post-meta">
-        Posted by Hux on
-        2014-01-29
+        Posted by ruijie on
+        2017-09-23
     </p>
 
 </div>
@@ -239,6 +237,8 @@
                     <!-- no hr -->
                     <h5><a href="/tags/">FEATURED TAGS</a></h5>
                     <div class="tags">
+                        
+                            
                         
                             
                         
