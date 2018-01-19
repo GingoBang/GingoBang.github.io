@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keyword"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>
+        
+          Concurrent包：ArrayBlockingQueue实现 - Ruijie的博客 | Ruijie&#39;s Blog
+        
+    </title>
+
+    <link rel="canonical" href="http://blog.dtmall.me/2017/10/13/2017-10-13-arrayblockingQ/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Ruijie&#39;s Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archives/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    
+<!-- Image to hack wechat -->
+<!-- <img src="http://blog.dtmall.me/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="{{ site.baseurl }}/{% if page.header-img %}{{ page.header-img }}{% else %}{{ site.header-img }}{% endif %}" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        background-image: url('/img/city.jpg')
+    }
+</style>
+<header class="intro-header" >
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                          <a class="tag" href="/tags/#并发" title="并发">并发</a>
+                        
+                    </div>
+                    <h1>Concurrent包：ArrayBlockingQueue实现</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by ruijie on
+                        2017-10-13
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+                <blockquote>
+<p>基于Array的阻塞队列实现</p>
+</blockquote>
+<p>JUC下提供了一些队列的实现，如：</p>
+<ul>
+<li>ArrayBlockingQueue</li>
+<li>LinkedBlockingQueue</li>
+<li>PriorityBlockingQueue</li>
+<li>DelayQueue</li>
+<li>ConcurrentLinkedQueue</li>
+</ul>
+<p>本文和后面两篇将详细介绍一下ArrayBlockingQueue，LinkedBlockingQueue和ConcurrentLinkedQueue。</p>
+<p>ArrayBlockingqueue继承自AbstractQueue，实现了BlockingQueu。根据BlockingQueue接口中的介绍，阻塞队列主要提供两类操作，即添加元素，移除元素。而针对每一类则提供四种类型的方法便于操作，由于添加和移除是对称操作，下面以添加元素为例：</p>
+<ul>
+<li>如果队里满了，再添加元素时直接抛出异常：<em>add()</em></li>
+<li>添加元素时返回布尔类型，即添加成功返回<code>true</code>，添加失败(队列满了)返回<code>false</code></li>
+<li>在有限时间内添加元素，如果队列满了，将使用condition的<code>awaitNanos()</code>通用方法在有限时间内自旋</li>
+<li>队列满时，线程将阻塞，被封装为Node对象添加到等待队列中</li>
+</ul>
+<h4 id="1-实现分析介绍"><a href="#1-实现分析介绍" class="headerlink" title="1. 实现分析介绍"></a>1. 实现分析介绍</h4><p>基于数组实现的一个FIFO的阻塞队列，它是一个大小固定的队列，<code>put()</code>操作一个已满的队列会导致线程阻塞，<code>take()</code>一个空队列同样会导致线程阻塞。</p>
+<p><code>ArrayBlockingQueue</code>内部使用了<code>ReentrantLock</code>可重入互斥锁和AQS内的<code>ConditionObject</code>，由之前的两篇博客可重入互斥锁是基于AQS的独占模式实现的，并且支持公平锁和非公平锁，而通过<code>Condition</code>我们可以根据相应的条件来进行相应线程的挂起或唤醒操作，从而实现一个生产者-消费者模式的阻塞队列。</p>
+<figure class="highlight dart"><table><tr><td class="code"><pre><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** 底层基于数组 *</span>/</span></span></div><div class="line"><span class="keyword">final</span> <span class="built_in">Object</span>[] items;</div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** items index for next take, poll, peek or remove *</span>/</span></span></div><div class="line"><span class="built_in">int</span> takeIndex;</div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** items index for next put, offer, or add *</span>/</span></span></div><div class="line"><span class="built_in">int</span> putIndex;</div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** 队列内的元素个数 *</span>/</span></span></div><div class="line"><span class="built_in">int</span> count;</div><div class="line"></div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** 这里使用了一把锁和两个condition条件 *</span>/</span></span></div><div class="line"><span class="keyword">final</span> ReentrantLock lock;</div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** take的等待条件 *</span>/</span></span></div><div class="line">private <span class="keyword">final</span> Condition notEmpty;</div><div class="line"><span class="comment"><span class="markdown">/<span class="emphasis">** put的等待条件 *</span>/</span></span></div><div class="line">private <span class="keyword">final</span> Condition notFull;</div></pre></td></tr></table></figure>
+<p>从成员变量上看，和官方JavaDoc内使用condition来实现的简单生产者-消费者的demo很相似，由一个<code>ReentrantLock</code>和两个<code>Condition</code>来实现对一个数组的添加元素和消费元素，下面看一下具体提供的方法。</p>
+<p>在看提供的公共方法之前先看一下内部操作队列的两个核心方法：<br><figure class="highlight kotlin"><table><tr><td class="code"><pre><div class="line"><span class="comment">//有没有觉得很眼熟:)</span></div><div class="line"><span class="keyword">private</span> void enqueue(E x) &#123;</div><div class="line">    <span class="keyword">final</span> Object[] items = <span class="keyword">this</span>.items;</div><div class="line">    <span class="comment">//由于是固定大小的FIFO队列，使用putIndex和takeIndex</span></div><div class="line">    <span class="comment">//来做必要的回环操作</span></div><div class="line">    items[putIndex] = x;</div><div class="line">    <span class="keyword">if</span> (++putIndex == items.length)</div><div class="line">        putIndex = <span class="number">0</span>;</div><div class="line">    count++;</div><div class="line">    <span class="comment">//唤醒take线程：实际是将条件队列节点移动到同步队列</span></div><div class="line">    notEmpty.signal();</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">private</span> E dequeue() &#123;</div><div class="line">    <span class="keyword">final</span> Object[] items = <span class="keyword">this</span>.items;</div><div class="line">    <span class="meta">@SuppressWarnings(<span class="meta-string">"unchecked"</span>)</span></div><div class="line">    E x = (E) items[takeIndex];</div><div class="line">    items[takeIndex] = <span class="literal">null</span>;</div><div class="line">    <span class="keyword">if</span> (++takeIndex == items.length)</div><div class="line">        takeIndex = <span class="number">0</span>;</div><div class="line">    count--;</div><div class="line">    <span class="comment">//这里是使用了iterator的情况，稍后再看</span></div><div class="line">    <span class="keyword">if</span> (itrs != <span class="literal">null</span>)</div><div class="line">        itrs.elementDequeued();</div><div class="line">    <span class="comment">//唤醒put线程：同理，移动封装的线程节点到同步队列</span></div><div class="line">    notFull.signal();</div><div class="line">    <span class="keyword">return</span> x;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong>添加元素的方法</strong></p>
+<ul>
+<li><em>offer()</em><figure class="highlight cs"><table><tr><td class="code"><pre><div class="line"><span class="comment">//可以看到使用了独占锁，而且由count字段来判定是否可以添加元素</span></div><div class="line"><span class="function"><span class="keyword">public</span> boolean <span class="title">offer</span>(<span class="params">E e</span>) </span>&#123;</div><div class="line">    checkNotNull(e);</div><div class="line">    final ReentrantLock <span class="keyword">lock</span> = <span class="keyword">this</span>.<span class="keyword">lock</span>;</div><div class="line">    <span class="keyword">lock</span>.<span class="keyword">lock</span>();</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        <span class="keyword">if</span> (count == items.length)</div><div class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">        <span class="keyword">else</span> &#123;</div><div class="line">            enqueue(e);</div><div class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">        &#125;</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        <span class="keyword">lock</span>.unlock();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>此外，还有一个<em>offer(E, long, TimeUnit)</em>方法，如果队列满了将在给定时间内尝试添加元素</p>
+<ul>
+<li><p><em>add()</em></p>
+<figure class="highlight aspectj"><table><tr><td class="code"><pre><div class="line"><span class="comment">//和offer不同，如果队列满了会抛出异常</span></div><div class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span> </span>&#123;</div><div class="line">    <span class="comment">//实际上是调用的super.add(e)，为了方便看改了一下</span></div><div class="line">    <span class="keyword">if</span> (offer(e))</div><div class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</div><div class="line">    <span class="keyword">else</span></div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Queue full"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p><em>put()</em></p>
+<figure class="highlight cs"><table><tr><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">put</span>(<span class="params">E e</span>) throws InterruptedException </span>&#123;</div><div class="line">    checkNotNull(e);</div><div class="line">    final ReentrantLock <span class="keyword">lock</span> = <span class="keyword">this</span>.<span class="keyword">lock</span>;</div><div class="line">    <span class="comment">//可中断的锁</span></div><div class="line">    <span class="keyword">lock</span>.lockInterruptibly();</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        <span class="comment">//当队列满时，挂起线程：添加到等待队列</span></div><div class="line">        <span class="keyword">while</span> (count == items.length)</div><div class="line">            notFull.<span class="keyword">await</span>();</div><div class="line">        <span class="comment">//否则将元素从队列中移除</span></div><div class="line">        enqueue(e);</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        <span class="keyword">lock</span>.unlock();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p><strong>移除元素的方法</strong></p>
+<ul>
+<li><em>pull()</em><figure class="highlight cs"><table><tr><td class="code"><pre><div class="line"><span class="comment">//根据count判定是否存在元素，返回等待时间最长的元素或null</span></div><div class="line"><span class="function"><span class="keyword">public</span> E <span class="title">poll</span>(<span class="params"></span>) </span>&#123;</div><div class="line">    final ReentrantLock <span class="keyword">lock</span> = <span class="keyword">this</span>.<span class="keyword">lock</span>;</div><div class="line">    <span class="keyword">lock</span>.<span class="keyword">lock</span>();</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        <span class="keyword">return</span> (count == <span class="number">0</span>) ? <span class="literal">null</span> : dequeue();</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        <span class="keyword">lock</span>.unlock();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>和<em>offer()</em>方法类似，也提供了一个带超时的重载版本</p>
+<ul>
+<li><em>remove()</em><figure class="highlight gradle"><table><tr><td class="code"><pre><div class="line"><span class="comment">//remove方法将遍历队列查找元素，使用removeAt()删除元素</span></div><div class="line"><span class="keyword">void</span> removeAt(<span class="keyword">final</span> <span class="keyword">int</span> removeIndex) &#123;</div><div class="line">    <span class="keyword">final</span> Object[] items = <span class="keyword">this</span>.items;</div><div class="line">    <span class="keyword">if</span> (removeIndex == takeIndex) &#123;</div><div class="line">        <span class="comment">// removing front item; just advance</span></div><div class="line">        items[takeIndex] = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">if</span> (++takeIndex == items.length)</div><div class="line">            takeIndex = <span class="number">0</span>;</div><div class="line">        <span class="keyword">count</span>--;</div><div class="line">        <span class="keyword">if</span> (itrs != <span class="keyword">null</span>)</div><div class="line">            itrs.elementDequeued();</div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="comment">// an "interior" remove</span></div><div class="line"></div><div class="line">        <span class="comment">// slide over all others up through putIndex.</span></div><div class="line">        <span class="keyword">final</span> <span class="keyword">int</span> putIndex = <span class="keyword">this</span>.putIndex;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = removeIndex;;) &#123;</div><div class="line">            <span class="keyword">int</span> <span class="keyword">next</span> = i + <span class="number">1</span>;</div><div class="line">            <span class="keyword">if</span> (<span class="keyword">next</span> == items.length)</div><div class="line">                <span class="keyword">next</span> = <span class="number">0</span>;</div><div class="line">            <span class="keyword">if</span> (<span class="keyword">next</span> != putIndex) &#123;</div><div class="line">                items[i] = items[<span class="keyword">next</span>];</div><div class="line">                i = <span class="keyword">next</span>;</div><div class="line">            &#125; <span class="keyword">else</span> &#123;</div><div class="line">                items[i] = <span class="keyword">null</span>;</div><div class="line">                <span class="keyword">this</span>.putIndex = i;</div><div class="line">                <span class="keyword">break</span>;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">count</span>--;</div><div class="line">        <span class="comment">//存在iterator的稍后再说</span></div><div class="line">        <span class="keyword">if</span> (itrs != <span class="keyword">null</span>)</div><div class="line">            itrs.removedAt(removeIndex);</div><div class="line">    &#125;</div><div class="line">    notFull.signal();</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>比较容易理解，考虑到是一个公共方法根据两个index做了一些处理</p>
+<ol>
+<li>当index正好是takeIndex时，直接把数组此下标引用置为null</li>
+<li>否则进行遍历，如果此index的下一个刚好是putIndex，直接将当前下标的引用置为空，否则需要移动数组直到移动到putindex之前。</li>
+</ol>
+<ul>
+<li><em>take()</em><figure class="highlight cs"><table><tr><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> E <span class="title">take</span>(<span class="params"></span>) throws InterruptedException </span>&#123;</div><div class="line">    final ReentrantLock <span class="keyword">lock</span> = <span class="keyword">this</span>.<span class="keyword">lock</span>;</div><div class="line">    <span class="keyword">lock</span>.lockInterruptibly();</div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        <span class="keyword">while</span> (count == <span class="number">0</span>)</div><div class="line">            <span class="comment">//队列为空，挂起线程：封装添加到条件队列</span></div><div class="line">            notEmpty.<span class="keyword">await</span>();</div><div class="line">        <span class="keyword">return</span> dequeue();</div><div class="line">    &#125; <span class="keyword">finally</span> &#123;</div><div class="line">        <span class="keyword">lock</span>.unlock();</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="2-内部Iterator实现"><a href="#2-内部Iterator实现" class="headerlink" title="2. 内部Iterator实现"></a>2. 内部Iterator实现</h4><p>未完待续~</p>
+<hr>
+<p>总结一下：</p>
+<ul>
+<li>ArrayBlockingQueue底层是基于数组实现了，内部通过一个互斥可重入锁和两个基于此锁的Condition实现并发操作的</li>
+<li>它的大小在创建时就已经确定是必要参数，且不能更改，它提供了阻塞添加，移除元素方法和快速失败方法</li>
+<li>它的迭代器是弱一致性的</li>
+</ul>
+
+
+                <hr>
+
+                
+
+                <ul class="pager">
+                    
+                        <li class="previous">
+                            <a href="/2017/10/14/2017-10-14-linkedblocingQ/" data-toggle="tooltip" data-placement="top" title="Concurrent包：LinkedBlockingQueue实现">&larr; Previous Post</a>
+                        </li>
+                    
+                    
+                        <li class="next">
+                            <a href="/2017/10/10/2017-10-10-bandwagonhost/" data-toggle="tooltip" data-placement="top" title="搬瓦工Shadowsocks服务">Next Post &rarr;</a>
+                        </li>
+                    
+                </ul>
+
+                
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                       
+                          <a class="tag" href="/tags/#并发" title="并发">并发</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+
+                    
+                </ul>
+                
+            </div>
+
+        </div>
+    </div>
+</article>
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "ruijie-blog";
+    var disqus_identifier = "http://blog.dtmall.me/2017/10/13/2017-10-13-arrayblockingQ/";
+    var disqus_url = "http://blog.dtmall.me/2017/10/13/2017-10-13-arrayblockingQ/";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("https://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                    <li>
+                        <a target="_blank" href="https://twitter.com/jay_echo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+                
+                    <li>
+                        <a target="_blank" href="https://www.zhihu.com/people/echojay">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa  fa-stack-1x fa-inverse">知</i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/GingoBang">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/瑞杰-袁-5b6399118">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Ruijie&#39;s Blog 2018 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    Ported by <a href="http://blog.kaijun.rocks">Kaijun</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=kaijun&repo=hexo-theme-huxblog&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://blog.dtmall.me/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-96114587-1';
+    var _gaDomain = 'blog.dtmall.me';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+<script>
+    // dynamic User by Hux
+    var _baId = '4cc1f2d8f3067386cc5cdb626a202900';
+
+    // Originial
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?" + _baId;
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="http://blog.dtmall.me/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>
