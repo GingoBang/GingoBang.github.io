@@ -184,6 +184,32 @@
 
 <div class="post-preview">
 
+    <a href="/2018/01/28/2018-01-28-es-agg-md/">
+        <h2 class="post-title">
+            使用elasticsearch做复杂数据计算聚合
+        </h2>
+        <h3 class="post-subtitle">
+            
+        </h3>
+        <div class="post-content-preview">
+            
+使用es做”复杂”数据计算
+
+
+一. 背景我们在ES中存了一些机器的状态数据cpu、内存、I/O等，十万条/min量级的数据，希望能对其中一些数据进行合并，并且对其中一些数据进行聚合计算。
+比如，对于cpu数据，可能数据结构如下："cpu": &#123;    "cores": 2,    "idle": &#123;"pct": 1.8729&#125;,    "iowait": &......
+        </div>
+    </a>
+    <p class="post-meta">
+        Posted by ruijie on
+        2018-01-28
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+
     <a href="/2018/01/19/2018-01-19-maven-repo/">
         <h2 class="post-title">
             解决elasticsearch-jest maven依赖冲突问题
@@ -407,31 +433,6 @@ Introduction
 </div>
 <hr>
 
-<div class="post-preview">
-
-    <a href="/2017/10/14/2017-10-14-linkedblocingQ/">
-        <h2 class="post-title">
-            Concurrent包：LinkedBlockingQueue实现
-        </h2>
-        <h3 class="post-subtitle">
-            
-        </h3>
-        <div class="post-content-preview">
-            
-基于链表的阻塞队列
-
-链表队列的吞吐量高于基于数组的阻塞队列，但是在并发情况下，它的性能可能并不一定比数组队列要高。在创建链表队列时，队列大小不是必须参数，如果不指定的话默认是Integer.MAX_VALUE，虽然不需要设置队列大小，但是会存在内存溢出的风险，在生产者的生产速度高于消费者的消费速度时可能会出现内存溢出或者占用内存过多的情况。
-下面通过代码看一下，为什么说链表队列的吞吐量会......
-        </div>
-    </a>
-    <p class="post-meta">
-        Posted by ruijie on
-        2017-10-14
-    </p>
-
-</div>
-<hr>
-
 
 
 <!-- Pager -->
@@ -468,6 +469,8 @@ Introduction
                         
                             
                             <a href="/tags/#并发" title="并发" rel="10">并发</a>
+                            
+                        
                             
                         
                             

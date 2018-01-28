@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="google-site-verification" content="xBT4GhYoi5qRD5tr338pgPM5OWHHIDR6mNg1a3euekI" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="keyword"  content="">
+    <link rel="shortcut icon" href="/img/favicon.ico">
+
+    <title>
+        
+          使用elasticsearch做复杂数据计算聚合 - Ruijie的博客 | Ruijie&#39;s Blog
+        
+    </title>
+
+    <link rel="canonical" href="http://blog.dtmall.me/2018/01/28/2018-01-28-es-agg-md/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/hux-blog.min.css">
+
+    <!-- Pygments Highlight CSS -->
+    <link rel="stylesheet" href="/css/highlight.css">
+
+    <!-- Custom Fonts -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"> -->
+    <!-- Hux change font-awesome CDN to qiniu -->
+    <link href="https://cdn.staticfile.org/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+
+    <!-- Hux Delete, sad but pending in China
+    <link href='http://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/
+    css'>
+    -->
+
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- ga & ba script hoook -->
+    <script></script>
+</head>
+
+
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="">
+
+    <!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Ruijie&#39;s Blog</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+
+                    
+
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/about/">About</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/archives/">Archives</a>
+                        </li>
+                        
+                    
+
+                        
+                        <li>
+                            <a href="/tags/">Tags</a>
+                        </li>
+                        
+                    
+                    
+                </ul>
+            </div>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+
+    <!-- Main Content -->
+    
+<!-- Image to hack wechat -->
+<!-- <img src="http://blog.dtmall.me/img/icon_wechat.png" width="0" height="0"> -->
+<!-- <img src="{{ site.baseurl }}/{% if page.header-img %}{{ page.header-img }}{% else %}{{ site.header-img }}{% endif %}" width="0" height="0"> -->
+
+<!-- Post Header -->
+<style type="text/css">
+    header.intro-header{
+        background-image: url('/img/city.jpg')
+    }
+</style>
+<header class="intro-header" >
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <div class="tags">
+                        
+                          <a class="tag" href="/tags/#elasticsearch" title="elasticsearch">elasticsearch</a>
+                        
+                    </div>
+                    <h1>使用elasticsearch做复杂数据计算聚合</h1>
+                    <h2 class="subheading"></h2>
+                    <span class="meta">
+                        Posted by ruijie on
+                        2018-01-28
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+
+    <!-- Post Container -->
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                post-container">
+
+                <blockquote>
+<p>使用es做”复杂”数据计算</p>
+</blockquote>
+<hr>
+<h4 id="一-背景"><a href="#一-背景" class="headerlink" title="一. 背景"></a>一. 背景</h4><p>我们在ES中存了一些机器的状态数据cpu、内存、I/O等，十万条/min量级的数据，希望能对其中一些数据进行合并，并且对其中一些数据进行聚合计算。</p>
+<p>比如，对于cpu数据，可能数据结构如下：<br><figure class="highlight xquery"><table><tr><td class="code"><pre><div class="line"><span class="string">"cpu"</span>: &#123;</div><div class="line">    <span class="string">"cores"</span>: <span class="number">2</span>,</div><div class="line">    <span class="string">"idle"</span>: &#123;<span class="string">"pct"</span>: <span class="number">1.8729</span>&#125;,</div><div class="line">    <span class="string">"iowait"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">0337</span>&#125;,</div><div class="line">    <span class="string">"irq"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">0003</span>&#125;,</div><div class="line">    <span class="string">"nice"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">001</span>&#125;,</div><div class="line">    <span class="string">"softirq"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">0005</span>&#125;,</div><div class="line">    <span class="string">"steal"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>&#125;,</div><div class="line">    <span class="string">"system"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">0366</span>&#125;,</div><div class="line">    <span class="string">"user"</span>: &#123;<span class="string">"pct"</span>: <span class="number">0</span>.<span class="number">054</span>9&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>我们需要先将每一天数据进行处理，得到总的cpu使用率，然后将结果和阈值对比查看是否达到报警门限。比较简单的方法，比如：</p>
+<ul>
+<li>在存入es之前把cpu使用率计算好再写入，计算分散到agent上</li>
+<li>聚合数据之前，较高频率(高于聚合频率)的进行数据清洗计算再写回es，聚合将基于这些清洗后的数据</li>
+</ul>
+<p>上面两种方式都不在考虑范围，不然我今天讲啥…</p>
+<h4 id="二-解决"><a href="#二-解决" class="headerlink" title="二. 解决"></a>二. 解决</h4><p>其实看起来是一个很简单的需求，根据时间维度和其他标识进行数据聚合，统计是否有cpu总使用率超过设定的阈值的情况。但是对于我有限的es知识来说，我们可以单独的进行数据聚合，但是如何让一个聚合可以使用另外一个聚合的结果是一个问题，否则最下层的聚合将cpu使用率计算出来后，如何被它上一层的过滤器使用，取进行报警计算呢(好了，开始进入弯路了…)</p>
+<p>在Google的过程中发现了一个ES社区的<a href="https://github.com/elastic/elasticsearch/issues/8110" target="_blank" rel="external">issue</a>，看到<code>Reducers</code>，感觉可能会符合我的要求啊，因为这其实就是一个查询+MapReduce的过程嘛。他主要的想法是，一个<code>aggregation</code>可以使用上一个<code>aggregation</code>的结果，进行分组、计算等等，生成新的<code>aggregation</code>或者结果。</p>
+<p>根据文档中的描述，提供的能力，从es的<a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/search-aggregations-pipeline.html" target="_blank" rel="external">官方文档中</a>，找到了有类似能力的<code>Pipeline Aggregations</code>。</p>
+<blockquote>
+<p>Pipeline aggregations work on the outputs produced from other aggregations rather than from document sets, adding information to the output tree. There are many different types of pipeline aggregation, each computing different information from other aggregations</p>
+</blockquote>
+<p>因此，我们可以在<code>Pipeline Aggregation</code>中通过<code>bucket path</code>引入一个<code>Aggregation</code>作为输入，进一步进行计算，甚至可以构建一个<code>MapReduce</code>计算链，当然性能肯定是会有损耗的，毕竟es的核心能力是搜索。</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><div class="line">&#123;</div><div class="line">    <span class="attr">"aggs"</span> : &#123;</div><div class="line">        <span class="attr">"sales_per_month"</span> : &#123;</div><div class="line">            <span class="attr">"date_histogram"</span> : &#123;</div><div class="line">                <span class="attr">"field"</span> : <span class="string">"date"</span>,</div><div class="line">                <span class="attr">"interval"</span> : <span class="string">"month"</span></div><div class="line">            &#125;,</div><div class="line">            <span class="attr">"aggs"</span>: &#123;</div><div class="line">                <span class="attr">"sales"</span>: &#123;</div><div class="line">                    <span class="attr">"sum"</span>: &#123;</div><div class="line">                        <span class="attr">"field"</span>: <span class="string">"price"</span></div><div class="line">                    &#125;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;,</div><div class="line">        <span class="attr">"max_monthly_sales"</span>: &#123;</div><div class="line">            <span class="attr">"max_bucket"</span>: &#123;</div><div class="line">                <span class="attr">"buckets_path"</span>: <span class="string">"sales_per_month&gt;sales"</span> </div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>针对上面的一个聚合，可以看到有一个按时间频率的桶聚合，它有一个sum子聚合，我们希望计算得到这些桶内的销售额最大结果，这里就是通过<code>bucket path</code>引入了sum聚合作为输入，进行Top计算，最终得到的结果是每月销售额中最大值。</p>
+<h6 id="1-简单粗暴的循环聚合"><a href="#1-简单粗暴的循环聚合" class="headerlink" title="1. 简单粗暴的循环聚合"></a>1. 简单粗暴的循环聚合</h6><figure class="highlight json"><table><tr><td class="code"><pre><div class="line">&#123;</div><div class="line">  <span class="attr">"query"</span> : &#123;</div><div class="line">    <span class="attr">"bool"</span> : &#123;</div><div class="line">      <span class="attr">"must"</span> : []</div><div class="line">    &#125;</div><div class="line">  &#125;,</div><div class="line">  <span class="attr">"aggregations"</span> : &#123;</div><div class="line">    <span class="attr">"terms"</span> : &#123;</div><div class="line">      <span class="attr">"termsAgg"</span> : &#123;</div><div class="line">        <span class="attr">"field"</span> : <span class="string">"我是聚合标识"</span></div><div class="line">      &#125;,</div><div class="line">      <span class="attr">"aggregations"</span> : &#123;</div><div class="line">        <span class="attr">"dateAgg"</span> : &#123;</div><div class="line">          <span class="attr">"date_histogram"</span> : &#123;</div><div class="line">            <span class="attr">"field"</span> : <span class="string">"@timestamp"</span>,</div><div class="line">            <span class="attr">"time_zone"</span> : <span class="string">"Asia/Shanghai"</span>,</div><div class="line">            <span class="attr">"interval"</span> : <span class="number">60000</span></div><div class="line">          &#125;,</div><div class="line">          <span class="attr">"aggregations"</span> : &#123;</div><div class="line">            <span class="attr">"sumAgg"</span> : &#123;</div><div class="line">              <span class="attr">"sum"</span> : &#123;</div><div class="line">                <span class="attr">"script"</span> : &#123;</div><div class="line">                  <span class="attr">"inline"</span> : <span class="string">"doc['system.pct'].value + doc['user.pct'].value"</span>,</div><div class="line">                  <span class="attr">"lang"</span> : <span class="string">"painless"</span></div><div class="line">                &#125;</div><div class="line">              &#125;</div><div class="line">            &#125;,</div><div class="line">            <span class="attr">"selector"</span> : &#123;</div><div class="line">              <span class="attr">"bucket_selector"</span> : &#123;</div><div class="line">                <span class="attr">"buckets_path"</span> : &#123;</div><div class="line">                  <span class="attr">"cpuSum"</span> : <span class="string">"sumAgg"</span></div><div class="line">                &#125;,</div><div class="line">                <span class="attr">"script"</span> : &#123;</div><div class="line">                  <span class="attr">"inline"</span> : <span class="string">"params.cpuSum &gt; 0.6"</span>,</div><div class="line">                  <span class="attr">"lang"</span> : <span class="string">"painless"</span></div><div class="line">                &#125;,</div><div class="line">                <span class="attr">"gap_policy"</span> : <span class="string">"skip"</span></div><div class="line">              &#125;</div><div class="line">            &#125;</div><div class="line">          &#125;</div><div class="line">        &#125;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>我们来屡一下…</p>
+<p><em>TermAggregation</em> -&gt; <em>DateHistogramAggregation</em> -&gt; <em>SumAggregation</em> &amp; <em>BucketSelectorAggregation</em>，简单的说通过sum聚合来统计总的使用率，通过selector聚合来筛选超过报警阈值的bucket，再通过时间和唯一标识来统计分类所有的数据，最终得到我们希望的按时间和标识统计相应时间段内的报警信息。</p>
+<p>BUT，一个这么简单的需求竟然套了三层，四个聚合…性能可想而知了，这也是我上面为什么说走上了弯路，如果数据量比较大，无法估计仅仅一个cpu报警信息的计算会消耗多少时间。</p>
+<h6 id="2-改进"><a href="#2-改进" class="headerlink" title="2. 改进"></a>2. 改进</h6><p>从上面的聚合json里可以看到，其中有一个<code>Script</code>，我们用内置脚本语言计算的cpu总使用率，那么这个脚本语言都还支持其他的什么功能吗，能不能直接通过脚本来计算，然后过滤呢，带着这个问题，看一下<a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/modules-scripting.html" target="_blank" rel="external">官方文档</a>吧。</p>
+<p>在文档里我们可以看到一个例子：<br><figure class="highlight xquery"><table><tr><td class="code"><pre><div class="line">GET my_index/_search</div><div class="line">&#123;</div><div class="line">  <span class="string">"script_fields"</span>: &#123;</div><div class="line">    <span class="string">"source"</span>: &#123;</div><div class="line">      <span class="string">"script"</span>: &#123;</div><div class="line">        <span class="string">"inline"</span>: <span class="string">"params._source.title + ' ' + params._source.first_name + ' ' + params._source.last_name"</span> </div><div class="line">      &#125;</div><div class="line">    &#125;,</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>它直接通过脚本语言在查询时进行计算，而不需要进行聚合，同理我们构建出下面的查询：</p>
+<figure class="highlight clojure"><table><tr><td class="code"><pre><div class="line">&#123;</div><div class="line">  <span class="string">"query"</span> : &#123;</div><div class="line">    <span class="string">"bool"</span> : &#123;</div><div class="line">      <span class="string">"must"</span> : [</div><div class="line">        &#123;</div><div class="line">          <span class="string">"script"</span> : &#123;</div><div class="line">            <span class="string">"script"</span> : &#123;</div><div class="line">              <span class="string">"inline"</span> : <span class="string">"BigDecimal a = BigDecimal.valueOf(doc['system.used'].value);\n</span></div><div class="line"><span class="string">                         BigDecimal b = BigDecimal.valueOf(doc['system.total'].value);\n</span></div><div class="line"><span class="string">                         MathContext mathContext = new MathContext(4, RoundingMode.DOWN);\n</span></div><div class="line"><span class="string">                         double c = a.divide(b,mathContext).doubleValue();\n</span></div><div class="line"><span class="string">                         return c &gt; 0.15d"</span>,</div><div class="line">              <span class="string">"lang"</span> : <span class="string">"painless"</span></div><div class="line">            &#125;,</div><div class="line">            <span class="string">"boost"</span> : <span class="number">1.0</span></div><div class="line">          &#125;</div><div class="line">        &#125;</div><div class="line">      ]</div><div class="line">    &#125;</div><div class="line">  &#125;,</div><div class="line">  <span class="string">"aggregations"</span> : &#123;</div><div class="line">    <span class="string">"hostname"</span> : &#123;</div><div class="line">      <span class="string">"terms"</span> : &#123;</div><div class="line">        <span class="string">"field"</span> : <span class="string">"beat.hostname"</span>,</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>那么我们只需要： Query &amp; <em>TermsAggregation</em> -&gt; <em>DateHistogramAggregation</em> 两层聚合得到结果。少了两层聚合，可能对于sum来说优势还不够明显，因为es的聚合接口支持累加，可以想象一下对于乘法，除法运算。</p>
+<p>我们针对每个值都需要一个<code>ValueCount</code>聚合来获取它的值，作为输入给<code>BucketScriptAggregation</code>进行乘除运算，最后构建出的结果是比较恶心的…</p>
+<p>针对上面的 <em>script</em> 中的语言，可以看一下<a href="http://nocf-www.elastic.co/guide/en/elasticsearch/reference/5.3/modules-scripting-painless.html" target="_blank" rel="external">Painless介绍</a>，它和<a href="http://docs.groovy-lang.org/next/html/documentation/core-syntax.html#_comments" target="_blank" rel="external">Groovy</a>比较相似，一些java语法也支持，但是并不是全部支持，比如上面那段代码中就存在一些坑！！！！</p>
+<p>完整代码如下：<br><figure class="highlight ebnf"><table><tr><td class="code"><pre><div class="line"><span class="attribute">long used</span> = 44708143104L;</div><div class="line"><span class="attribute">long total</span> = 270132957184L;</div><div class="line"><span class="attribute">BigDecimal a</span> = BigDecimal.valueOf(used);</div><div class="line"><span class="attribute">BigDecimal b</span> = BigDecimal.valueOf(total);</div><div class="line"><span class="attribute">MathContext mathContext</span> = new MathContext(4, RoundingMode.DOWN);</div><div class="line"><span class="attribute">double c</span> = a.divide(b,mathContext).doubleValue();</div></pre></td></tr></table></figure></p>
+<p>对于大数运算我们一般使用 <em>BigDecimal</em> 或者 <em>BigInteger</em>，在painless中是支持的，但是并不是支持所有的重载方法，上面意思呢，在java中我们可以使用如下代码来进行计算:<br><figure class="highlight armasm"><table><tr><td class="code"><pre><div class="line"><span class="symbol">long</span> used = <span class="number">44708143104</span>L<span class="comment">;</span></div><div class="line"><span class="symbol">long</span> total = <span class="number">270132957184</span>L<span class="comment">;</span></div><div class="line"><span class="keyword">BigDecimal </span>a = <span class="keyword">BigDecimal.valueOf(used);</span></div><div class="line"><span class="keyword">BigDecimal </span><span class="keyword">b </span>= <span class="keyword">BigDecimal.valueOf(total);</span></div><div class="line"><span class="keyword">//这个方法在painless中会报错的</span></div><div class="line"><span class="keyword">double </span>c = a.divide(<span class="keyword">b, </span><span class="number">4</span>, RoundingMode.DOWN).doubleValue()<span class="comment">;</span></div></pre></td></tr></table></figure></p>
+<p>会报如下错误：</p>
+<blockquote>
+<p>“caused_by”:{“type”:”illegal_argument_exception”,”reason”:”Unknown call [divide] with [3] arguments on type [BigDecimal].”}</p>
+</blockquote>
+<p>因此使用起来还是有一定难度的。</p>
+<p><em>另外存聚合的结果和改进后的查询加聚合的结果表现形式也是不一样的</em></p>
+<ul>
+<li>纯粹聚合的结果，当满足条件的结果不存在时，bucket仍然存在，但是size为0。<em>{“terms”:{“buckets”:[{“key”:”key1”,”doc_count”:10,”dateAgg”:{“buckets”:[]}},{“key”:”key2”,”doc_count”:10,”dateAgg”:{“buckets”:[]}}]}}</em></li>
+<li>查询加聚合的结果，相当于是先过滤了查询结果，再根据过滤后的查询结果进行聚合，当满足条件的结果不存在时，相应的bucket将不存在。 <em>{“hostname”:{“buckets”:[{“key”:”key1”,”doc_count”:10}]}}</em></li>
+</ul>
+
+
+                <hr>
+
+                
+
+                <ul class="pager">
+                    
+                    
+                        <li class="next">
+                            <a href="/2018/01/19/2018-01-19-maven-repo/" data-toggle="tooltip" data-placement="top" title="解决elasticsearch-jest maven依赖冲突问题">Next Post &rarr;</a>
+                        </li>
+                    
+                </ul>
+
+                
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+    <!-- Side Catalog Container -->
+        
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
+
+    <!-- Sidebar Container -->
+
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5><a href="/tags/">FEATURED TAGS</a></h5>
+                    <div class="tags">
+                       
+                          <a class="tag" href="/tags/#elasticsearch" title="elasticsearch">elasticsearch</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+                <hr>
+                <h5>FRIENDS</h5>
+                <ul class="list-inline">
+
+                    
+                </ul>
+                
+            </div>
+
+        </div>
+    </div>
+</article>
+
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "ruijie-blog";
+    var disqus_identifier = "http://blog.dtmall.me/2018/01/28/2018-01-28-es-agg-md/";
+    var disqus_url = "http://blog.dtmall.me/2018/01/28/2018-01-28-es-agg-md/";
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+<!-- anchor-js, Doc:http://bryanbraun.github.io/anchorjs/ -->
+<script>
+    async("https://cdn.bootcss.com/anchor-js/1.1.1/anchor.min.js",function(){
+        anchors.options = {
+          visible: 'always',
+          placement: 'right',
+          icon: '#'
+        };
+        anchors.add().remove('.intro-header h1').remove('.subheading').remove('.sidebar-container h5');
+    })
+</script>
+<style>
+    /* place left on bigger screen */
+    @media all and (min-width: 800px) {
+        .anchorjs-link{
+            position: absolute;
+            left: -0.75em;
+            font-size: 1.1em;
+            margin-top : -0.1em;
+        }
+    }
+</style>
+
+
+
+    <!-- Footer -->
+    <!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <ul class="list-inline text-center">
+                
+                
+                    <li>
+                        <a target="_blank" href="https://twitter.com/jay_echo">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+                
+                    <li>
+                        <a target="_blank" href="https://www.zhihu.com/people/echojay">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa  fa-stack-1x fa-inverse">知</i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/GingoBang">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://www.linkedin.com/in/瑞杰-袁-5b6399118">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Ruijie&#39;s Blog 2018 
+                    <br>
+                    Theme by <a href="http://huangxuan.me">Hux</a> 
+                    <span style="display: inline-block; margin: 0 5px;">
+                        <i class="fa fa-heart"></i>
+                    </span> 
+                    Ported by <a href="http://blog.kaijun.rocks">Kaijun</a> | 
+                    <iframe
+                        style="margin-left: 2px; margin-bottom:-5px;"
+                        frameborder="0" scrolling="0" width="91px" height="20px"
+                        src="https://ghbtns.com/github-btn.html?user=kaijun&repo=hexo-theme-huxblog&type=star&count=true" >
+                    </iframe>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/hux-blog.min.js"></script>
+
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- 
+     Because of the native support for backtick-style fenced code blocks 
+     right within the Markdown is landed in Github Pages, 
+     From V1.6, There is no need for Highlight.js, 
+     so Huxblog drops it officially.
+
+     - https://github.com/blog/2100-github-pages-now-faster-and-simpler-with-jekyll-3-0  
+     - https://help.github.com/articles/creating-and-highlighting-code-blocks/    
+-->
+<!--
+    <script>
+        async("http://cdn.bootcss.com/highlight.js/8.6/highlight.min.js", function(){
+            hljs.initHighlightingOnLoad();
+        })
+    </script>
+    <link href="http://cdn.bootcss.com/highlight.js/8.6/styles/github.min.css" rel="stylesheet">
+-->
+
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://blog.dtmall.me/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("https://cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-96114587-1';
+    var _gaDomain = 'blog.dtmall.me';
+
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+
+
+<!-- Baidu Tongji -->
+
+<script>
+    // dynamic User by Hux
+    var _baId = '4cc1f2d8f3067386cc5cdb626a202900';
+
+    // Originial
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?" + _baId;
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+
+
+<!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
+
+
+
+
+
+<!-- Image to hack wechat -->
+<img src="http://blog.dtmall.me/img/icon_wechat.png" width="0" height="0" />
+<!-- Migrate from head to bottom, no longer block render and still work -->
+
+</body>
+
+</html>

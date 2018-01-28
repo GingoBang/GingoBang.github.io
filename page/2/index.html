@@ -184,6 +184,31 @@
 
 <div class="post-preview">
 
+    <a href="/2017/10/14/2017-10-14-linkedblocingQ/">
+        <h2 class="post-title">
+            Concurrent包：LinkedBlockingQueue实现
+        </h2>
+        <h3 class="post-subtitle">
+            
+        </h3>
+        <div class="post-content-preview">
+            
+基于链表的阻塞队列
+
+链表队列的吞吐量高于基于数组的阻塞队列，但是在并发情况下，它的性能可能并不一定比数组队列要高。在创建链表队列时，队列大小不是必须参数，如果不指定的话默认是Integer.MAX_VALUE，虽然不需要设置队列大小，但是会存在内存溢出的风险，在生产者的生产速度高于消费者的消费速度时可能会出现内存溢出或者占用内存过多的情况。
+下面通过代码看一下，为什么说链表队列的吞吐量会......
+        </div>
+    </a>
+    <p class="post-meta">
+        Posted by ruijie on
+        2017-10-14
+    </p>
+
+</div>
+<hr>
+
+<div class="post-preview">
+
     <a href="/2017/10/13/2017-10-13-arrayblockingQ/">
         <h2 class="post-title">
             Concurrent包：ArrayBlockingQueue实现
@@ -378,6 +403,8 @@ volatile: 内存可见性以及禁止指令重排序
                         
                             
                             <a href="/tags/#并发" title="并发" rel="10">并发</a>
+                            
+                        
                             
                         
                             
