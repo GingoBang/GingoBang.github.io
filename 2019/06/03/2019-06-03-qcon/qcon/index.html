@@ -13,11 +13,11 @@
 
     <title>
         
-          2017-书单 - Ruijie的博客 | Ruijie&#39;s Blog
+          2019广州Qcon个人总结 - Ruijie的博客 | Ruijie&#39;s Blog
         
     </title>
 
-    <link rel="canonical" href="http://blog.dtmall.me/2017/10/17/2017-书单/">
+    <link rel="canonical" href="http://blog.dtmall.me/2019/06/03/2019-06-03-qcon/qcon/">
 
     <!-- Bootstrap Core CSS -->
     <link rel="stylesheet" href="/css/bootstrap.min.css">
@@ -165,14 +165,14 @@
                 <div class="post-heading">
                     <div class="tags">
                         
-                          <a class="tag" href="/tags/#读书" title="读书">读书</a>
+                          <a class="tag" href="/tags/#行业会议" title="行业会议">行业会议</a>
                         
                     </div>
-                    <h1>2017-书单</h1>
+                    <h1>2019广州Qcon个人总结</h1>
                     <h2 class="subheading"></h2>
                     <span class="meta">
                         Posted by ruijie on
-                        2017-10-17
+                        2019-06-03
                     </span>
                 </div>
             </div>
@@ -191,9 +191,37 @@
                 col-md-10 col-md-offset-1
                 post-container">
 
-                <h4 id="1-小说类"><a href="#1-小说类" class="headerlink" title="1. 小说类"></a>1. 小说类</h4><p><code>海边的卡夫卡</code>: 我们寻求的是灵魂的平和~<br><code>一个人的朝圣</code>: 一个”倔强”老头的拯救自我之旅~<br><code>摆渡人</code>: 摆渡人少年和意外身亡小女孩的爱之旅？<br><code>我们</code>: 我们一直向往的“终极社会形态”真的是我们希望的吗，我们那时候会不会怀念我们小时候那样的生活？每天抓鱼，抓知了，下河游泳，还是我们正在走向的科技生活，围困在这座钢铁围城里？<br><code>1984</code><br><code>美丽新世界</code><br><code>鱼羊野史</code>: 有时间还是看看晓松的《晓说》,《鱼羊野史》，听他天南海北，古今往来，扯淡！</p>
-<h4 id="2-历史类"><a href="#2-历史类" class="headerlink" title="2. 历史类"></a>2. 历史类</h4><p><code>历史的境界</code>: 高华先生的作品，被和谐了，可以网上搜一下<br><code>巨流河</code>: 齐邦媛先生</p>
-<h4 id="3-杂文类"><a href="#3-杂文类" class="headerlink" title="3. 杂文类"></a>3. 杂文类</h4><p><code>沉默的大多数</code>: 感觉很多思考和见解都只能算是一家之言，不喜欢~</p>
+                <blockquote>
+<p>2019年5月27-28广州Qcon个人观感</p>
+</blockquote>
+<p>5月底这次在广州的Qcon， 总体下来的感觉是微服务主题和DevOps主题相对热度较高，大家比较关注各大互联网公司是如何落地微服务以及相关的生态是如何构建的， 比如DevOps， 服务治理等。演讲内容也主要体现在大的趋势和架构上，技术细节本身并不会有很深入的介绍。</p>
+<p>可能是因为Qcon第一次在广州， 这次峰会的规模相对不大， 参展的大厂商只看到了AWS和华为云。这次峰会上重点关注了微服务主题和DevOps主题，以下大概介绍一下。</p>
+<p><img src="/img/2019-05-img/qcon-top.jpg" alt="封面"></p>
+<h2 id="一-唯品会一键拉起服务"><a href="#一-唯品会一键拉起服务" class="headerlink" title="一. 唯品会一键拉起服务"></a>一. 唯品会一键拉起服务</h2><h3 id="1-先决条件"><a href="#1-先决条件" class="headerlink" title="1. 先决条件"></a>1. 先决条件</h3><p>唯品会的基础设施中都按Namespace进行了分区支持，也就是说一套完整的基础设施可以支持多环境， 多分组的上层业务，这样做的好处是业务运维和环境运维中不需要关注复杂的中间件设施， 不需要管理运维多套基础环境。上层的联调环境在进行拉起和使用时只需要声明相应的分区、分组或者说命名空间就可以快速拉起一套可联调的环境。</p>
+<p><strong>基础设施分组支持</strong></p>
+<figure class="highlight clean"><table><tr><td class="code"><pre><div class="line"></div><div class="line">数据库和缓存：容器化，每个环境单独实例</div><div class="line">• 所有基础设施中间件支持逻辑分区服务</div><div class="line">• 消息服务</div><div class="line">• 环境分区 -&gt; Topic后缀：消息中间件SDK自动适配</div><div class="line">• Kafka单一集群过多Topic性能问题：多集群动态分配</div></pre></td></tr></table></figure>
+<p><strong>基础环境的分组隔离</strong><br><figure class="highlight less"><table><tr><td class="code"><pre><div class="line"></div><div class="line"><span class="selector-tag">HTTP</span></div><div class="line">• <span class="selector-tag">Skydns</span> 每个环境单独创建统一子域</div><div class="line">• 子域内为应用创建域名</div><div class="line"></div><div class="line"><span class="selector-tag">RPC</span>服务注册发现 (唯品会OSP框架)</div><div class="line">• <span class="selector-tag">Zookeeper</span>作为服务注册发现信息存储，按子树支持环境分区</div><div class="line">• 基于环境对应子树查询服务</div><div class="line"></div><div class="line">边界代理(Vmock)，统一转发到外部依赖的环境</div><div class="line">• <span class="selector-tag">Skydns</span> <span class="selector-tag">DNS</span>劫持，转发<span class="selector-tag">HTTP</span></div><div class="line">• <span class="selector-tag">OSP</span> <span class="selector-tag">Proxy</span>集成，转发<span class="selector-tag">RPC</span></div></pre></td></tr></table></figure></p>
+<h3 id="2-落地实现"><a href="#2-落地实现" class="headerlink" title="2. 落地实现"></a>2. 落地实现</h3><p><strong>应用实例抽象</strong></p>
+<p>在基础设施分区支持的基础上， 应用可以简单的抽象为配置，中间件基础设施配置和资源配置，形成了创建一个部署单元的三个基本要素<br><img src="/img/2019-05-img/appmodel.jpg" alt="应用"></p>
+<p><strong>DAG模型</strong></p>
+<p>简单的理解是通过mapping到的基础配置先进行基础设施分区的创建， 比如隔离DB等， 之后根据应用配置进行资源创建和服务部署， 最终形成一套可联调的环境。</p>
+<p><img src="/img/2019-05-img/dag.jpg" alt="DAG"></p>
+<p><strong>未来的发展方向</strong></p>
+<p>从上面的简要介绍中可以看到，一套联调环境的拉起依赖大量的配置， 从资源的配置， 到应用的环境配置等。 唯品会的演进目标中也提到了配置代码化，以配置的方式来管理其联调环境。</p>
+<p><img src="/img/2019-05-img/future.jpg" alt="future"></p>
+<h3 id="3-个人观感"><a href="#3-个人观感" class="headerlink" title="3. 个人观感"></a>3. 个人观感</h3><p>关于配置的重要性，在我们接触和使用k8s之后，其实是会越来越深刻的感受到的，从唯品会的一键拉起环境中也可以看到，一套环境可以被抽象为各个维度的配置来最终描述这套环境如何被拉起，如何被使用和运维。</p>
+<p>在K8S这种提供了终态概念下，我们的所有运维操作，管理操作最终都可以是抽象为一批yaml配置，用于资源的创建，配置的注入和期望状态的管理，通过这种终态描述的方式消除掉大体量环境的过程式运维所带来的复杂性和工作量。</p>
+<h2 id="二-美团AIOPS"><a href="#二-美团AIOPS" class="headerlink" title="二. 美团AIOPS"></a>二. 美团AIOPS</h2><p>强调通过对各维度的关键数据，核心指标进行分析处理对业务运维提供数据和能力支撑，最终达到无人值守的状态。</p>
+<p><strong>容量规划</strong></p>
+<p>根据线上流量， 压测结果，各类metric等对系统的容量进行自动评估</p>
+<p><strong>风险预测</strong></p>
+<p>根据各类型，各维度的巡检数据结合风险模型对风险进行预测</p>
+<p><strong>故障识别</strong></p>
+<p>通过复杂链路数据，根因分析和预案管理，对告警信息进行准确判断和故障快速定位，提供预案建议等</p>
+<p><strong>弹性建设</strong></p>
+<p>没有特别明白这部分是在做什么， 从浅层理解上看起来是通过故障演练和容灾演练发现系统瓶颈</p>
+<p>总的来说，把这套体系称之为数据支撑平台比AIOPS可能更合适一些，通过对各维度数据的处理结合不同的模型，对决策人员提供运维支撑。</p>
+<p><img src="/img/2019-05-img/aiops.jpg" alt="aiops"></p>
 
 
                 <hr>
@@ -202,13 +230,9 @@
 
                 <ul class="pager">
                     
-                        <li class="previous">
-                            <a href="/2017/10/19/2017-10-19-concurrentLinkedQ/" data-toggle="tooltip" data-placement="top" title="concurrent包：ConcurrentLinkedQueue源码">&larr; Previous Post</a>
-                        </li>
-                    
                     
                         <li class="next">
-                            <a href="/2017/10/16/2017-10-16-NonBlockingQAlgorithm/" data-toggle="tooltip" data-placement="top" title="非阻塞算法（译）">Next Post &rarr;</a>
+                            <a href="/2018/01/28/2018-01-28-es-agg/" data-toggle="tooltip" data-placement="top" title="使用elasticsearch做复杂数据计算聚合">Next Post &rarr;</a>
                         </li>
                     
                 </ul>
@@ -226,6 +250,20 @@
             </div>
     <!-- Side Catalog Container -->
         
+            <div class="
+                col-lg-2 col-lg-offset-0
+                visible-lg-block
+                sidebar-container
+                catalog-container">
+                <div class="side-catalog">
+                    <hr class="hidden-sm hidden-xs">
+                    <h5>
+                        <a class="catalog-toggle" href="#">CATALOG</a>
+                    </h5>
+                    <ul class="catalog-body"></ul>
+                </div>
+            </div>
+        
 
     <!-- Sidebar Container -->
 
@@ -241,7 +279,7 @@
                     <h5><a href="/tags/">FEATURED TAGS</a></h5>
                     <div class="tags">
                        
-                          <a class="tag" href="/tags/#读书" title="读书">读书</a>
+                          <a class="tag" href="/tags/#行业会议" title="行业会议">行业会议</a>
                         
                     </div>
                 </section>
@@ -269,8 +307,8 @@
 <script type="text/javascript">
     /* * * CONFIGURATION VARIABLES * * */
     var disqus_shortname = "ruijie-blog";
-    var disqus_identifier = "http://blog.dtmall.me/2017/10/17/2017-书单/";
-    var disqus_url = "http://blog.dtmall.me/2017/10/17/2017-书单/";
+    var disqus_identifier = "http://blog.dtmall.me/2019/06/03/2019-06-03-qcon/qcon/";
+    var disqus_url = "http://blog.dtmall.me/2019/06/03/2019-06-03-qcon/qcon/";
 
     (function() {
         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -497,6 +535,50 @@
 
 
 <!-- Side Catalog -->
+
+<script type="text/javascript">
+    function generateCatalog (selector) {
+        var P = $('div.post-container'),a,n,t,l,i,c;
+        a = P.find('h1,h2,h3,h4,h5,h6');
+        a.each(function () {
+            n = $(this).prop('tagName').toLowerCase();
+            i = "#"+$(this).prop('id');
+            t = $(this).text();
+            c = $('<a href="'+i+'" rel="nofollow">'+t+'</a>');
+            l = $('<li class="'+n+'_nav"></li>').append(c);
+            $(selector).append(l);
+        });
+        return true;    
+    }
+
+    generateCatalog(".catalog-body");
+
+    // toggle side catalog
+    $(".catalog-toggle").click((function(e){
+        e.preventDefault();
+        $('.side-catalog').toggleClass("fold")
+    }))
+
+    /*
+     * Doc: https://github.com/davist11/jQuery-One-Page-Nav
+     * Fork by Hux to support padding
+     */
+    async("/js/jquery.nav.js", function () {
+        $('.catalog-body').onePageNav({
+            currentClass: "active",
+            changeHash: !1,
+            easing: "swing",
+            filter: "",
+            scrollSpeed: 700,
+            scrollOffset: 0,
+            scrollThreshold: .2,
+            begin: null,
+            end: null,
+            scrollChange: null,
+            padding: 80
+        });
+    });
+</script>
 
 
 
